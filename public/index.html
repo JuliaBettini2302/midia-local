@@ -108,7 +108,16 @@ async function renderPlay(){
           <div class="item">
             <div>
               <b>${esc(p.name)}</b><br>
-              <small>${(p.items||[]).length} mídia(s)</small>
+<small>${(p.items||[]).length} mídia(s)</small>
+<div style="margin-top:8px">
+  ${(p.items||[]).length
+    ? p.items.map(i => {
+        const m = media.find(x => x.id === (i.mediaId || i));
+        return `<div style="font-size:13px;margin-top:4px">📺 ${esc(m ? m.name : 'Mídia')}</div>`;
+      }).join('')
+    : '<div style="font-size:13px;color:#777">Nenhuma mídia adicionada.</div>'
+  }
+</div>
             </div>
 
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
