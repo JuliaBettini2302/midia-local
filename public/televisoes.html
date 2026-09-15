@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mídia Local — Televisões</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f5f6f8;color:#18202a}aside{position:fixed;left:0;top:0;bottom:0;width:230px;background:#111827;color:#fff;padding:24px 16px}h1{font-size:21px;margin:0 0 28px;padding:0 10px}.nav a{display:block;color:#b8c0cc;text-decoration:none;padding:12px 10px;border-radius:9px;margin:3px 0}.nav a:hover,.nav a.active{background:#273244;color:#fff}.main{margin-left:230px;padding:34px;max-width:1400px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.top h2{margin:0;font-size:27px}.btn{background:#111827;color:#fff;border:0;border-radius:9px;padding:11px 15px;cursor:pointer}.btn.light{background:#eef1f5;color:#202938}.toolbar{display:flex;gap:10px;margin-bottom:16px}.search{flex:1;padding:12px;border:1px solid #d9dde5;border-radius:9px;background:#fff}.table{background:#fff;border:1px solid #e4e7ec;border-radius:14px;overflow:hidden}.row{display:grid;grid-template-columns:1.3fr 1.1fr 1fr .8fr 1.4fr 1.2fr;gap:12px;padding:16px 18px;border-bottom:1px solid #edf0f3;align-items:center}.row.head{font-size:12px;color:#697586;font-weight:700;background:#fafbfc}.name{font-weight:700}.sub{font-size:12px;color:#7a8492;margin-top:4px}.pill{display:inline-block;padding:5px 8px;border-radius:99px;font-size:12px;font-weight:700}.on{background:#dcfce7;color:#166534}.off{background:#fee2e2;color:#991b1b}.actions{display:flex;gap:6px;flex-wrap:wrap}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}.box{width:min(520px,100%);background:#fff;border-radius:16px;padding:24px}.box h3{margin-top:0}.input{width:100%;padding:12px;border:1px solid #d9dde5;border-radius:9px;margin:7px 0 14px}.code{font-size:30px;font-weight:800;letter-spacing:4px;text-align:center;padding:18px;background:#f2f4f7;border-radius:12px;margin:15px 0}.empty{text-align:center;padding:50px;color:#7a8492}
+@media(max-width:1000px){.row{grid-template-columns:1fr 1fr}.row.head{display:none}.main{margin-left:190px}aside{width:190px}}
+</style></head>
+<body><aside><h1>📺 Mídia Local</h1><div class="nav"><a href="/">Dashboard</a><a class="active" href="/televisoes">📺 Televisões</a><a href="#">🏪 Estabelecimentos</a><a href="#">👤 Anunciantes</a><a href="#">📣 Campanhas</a><a href="#">▶ Playlists</a><a href="#">🖼 Mídias</a><a href="#">📊 Relatórios</a><a href="#">💰 Financeiro</a></div></aside>
+<main class="main"><div class="top"><div><h2>Televisões</h2><div style="color:#697586">Gerencie todos os pontos da sua rede.</div></div><button class="btn" onclick="openNew()">+ Cadastrar TV</button></div>
+<div class="toolbar"><input id="search" class="search" placeholder="Pesquisar por TV, estabelecimento ou endereço..." oninput="render()"></div>
+<div class="table"><div class="row head"><div>TV</div><div>Estabelecimento</div><div>Status</div><div>Playlist</div><div>Última conexão</div><div>Ações</div></div><div id="list"></div></div></main>
+<div id="modal" class="modal"><div class="box"><h3 id="modalTitle">Cadastrar TV</h3><form id="form"><label>Nome da TV</label><input class="input" id="name" required placeholder="Ex.: TV Balcão 01"><label>Estabelecimento</label><input class="input" id="establishment" placeholder="Ex.: Restaurante Central"><label>Endereço</label><input class="input" id="address" placeholder="Rua, número, bairro"><button class="btn">Cadastrar e gerar código</button> <button type="button" class="btn light" onclick="closeModal()">Cancelar</button></form></div></div>
+<div id="codeModal" class="modal"><div class="box"><h3>TV cadastrada 🎉</h3><p style="color:#697586">Na televisão, abra o Player e digite este código:</p><div id="code" class="code"></div><button class="btn" onclick="copyCode()">Copiar código</button> <button class="btn light" onclick="closeCode()">Fechar</button><p style="font-size:12px;color:#7a8492">O código é usado para vincular o aparelho à sua TV cadastrada.</p></div></div>
+<script>
+let TVs=[];
+const esc=s=>(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+function load(){fetch('/api/televisions').then(r=>r.json()).then(x=>{TVs=x;render()})}
+function render(){
+ const q=document.getElementById('search').value.toLowerCase();
+ const arr=TVs.filter(t=>(t.name+' '+t.establishment+' '+t.address).toLowerCase().includes(q));
+ const el=document.getElementById('list');
+ if(!arr.length){el.innerHTML='<div class="empty">Nenhuma televisão cadastrada ainda.</div>';return}
+ el.innerHTML=arr.map(t=>`<div class="row">
+ <div><div class="name">${esc(t.name)}</div><div class="sub">${esc(t.activationCode)}</div></div>
+ <div>${esc(t.establishment||'—')}<div class="sub">${esc(t.address||'')}</div></div>
+ <div><span class="pill ${t.online?'on':'off'}">${t.online?'● Online':'● Offline'}</span><div class="sub">${t.activated?'Ativada':'Aguardando ativação'}</div></div>
+ <div>${esc((TVs.find(x=>x.id===t.id)&&'') || 'Sem playlist')}</div>
+ <div>${t.lastSeen?new Date(t.lastSeen).toLocaleString('pt-BR'):'Nunca conectou'}</div>
+ <div class="actions"><button class="btn light" onclick="showCode('${t.activationCode}')">Código</button><button class="btn light" onclick="openPlayer('${t.activationCode}')">Player</button><button class="btn light" onclick="regen('${t.id}')">Novo código</button><button class="btn light" onclick="delTV('${t.id}')">Excluir</button></div>
+ </div>`).join('');
+}
+function openNew(){document.getElementById('modal').classList.add('show');document.getElementById('name').focus()}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+document.getElementById('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nameInput = document.getElementById('name');
+  const establishmentInput = document.getElementById('establishment');
+  const addressInput = document.getElementById('address');
+  const body = {
+    name: nameInput.value.trim(),
+    establishment: establishmentInput.value.trim(),
+    address: addressInput.value.trim()
+  };
+  if (!body.name) {
+    nameInput.focus();
+    return alert('Informe o nome da TV.');
+  }
+  try {
+    const r = await fetch('/api/televisions', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const t = await r.json();
+    if (!r.ok) return alert(t.error || 'Não foi possível cadastrar a TV.');
+    closeModal();
+    e.target.reset();
+    showCode(t.activationCode);
+    load();
+  } catch (err) {
+    alert('Não foi possível conectar ao servidor. Verifique se o Mídia Local está rodando no PowerShell.');
+  }
+});
+function showCode(c){document.getElementById('code').textContent=c;document.getElementById('codeModal').classList.add('show')}
+function closeCode(){document.getElementById('codeModal').classList.remove('show')}
+function copyCode(){navigator.clipboard?.writeText(document.getElementById('code').textContent);alert('Código copiado!')}
+function openPlayer(c){window.open('/player?code='+encodeURIComponent(c),'_blank')}
+async function regen(id){if(!confirm('Gerar um novo código? O código atual deixará de funcionar.'))return;let r=await fetch('/api/televisions/'+id+'/regenerate-code',{method:'POST'});let t=await r.json();showCode(t.activationCode);load()}
+async function delTV(id){if(!confirm('Excluir esta TV?'))return;await fetch('/api/televisions/'+id,{method:'DELETE'});load()}
+load();setInterval(load,15000);
+</script></body></html>

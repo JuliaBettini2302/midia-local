@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mídia Local</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f7fb;color:#172033}header{background:#111827;color:white;padding:22px 28px;display:flex;justify-content:space-between;align-items:center}header h1{margin:0;font-size:25px}header span{opacity:.75;font-size:14px}.wrap{max-width:1100px;margin:25px auto;padding:0 18px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}.card{background:white;border-radius:14px;padding:20px;box-shadow:0 2px 10px #0000000b}.num{font-size:30px;font-weight:700;margin-top:8px}.muted{color:#6b7280;font-size:13px}.nav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}.nav button{border:0;background:white;padding:11px 16px;border-radius:10px;cursor:pointer;font-weight:600}.nav button.active{background:#111827;color:white}.panel{background:white;border-radius:14px;padding:22px;box-shadow:0 2px 10px #0000000b;margin-bottom:18px}.panel h2{margin-top:0}.row{display:flex;gap:10px;flex-wrap:wrap}.row input,.row select{padding:11px;border:1px solid #d7dce5;border-radius:9px;flex:1;min-width:180px}.btn{border:0;border-radius:9px;padding:11px 15px;background:#111827;color:#fff;cursor:pointer}.btn.danger{background:#b91c1c}.btn.light{background:#e5e7eb;color:#111827}.item{border:1px solid #e5e7eb;border-radius:11px;padding:14px;margin-top:10px;display:flex;justify-content:space-between;gap:12px;align-items:center}.badge{padding:5px 8px;border-radius:99px;background:#e5e7eb;font-size:12px}.on{background:#dcfce7;color:#166534}.off{background:#fee2e2;color:#991b1b}.hidden{display:none}small{color:#6b7280}.empty{padding:25px;text-align:center;color:#6b7280}
+@media(max-width:800px){.cards{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body>
+<header><h1>📺 Mídia Local</h1><span>Painel de controle</span></header>
+<div class="wrap">
+<div class="nav"><button class="active" data-tab="inicio">Início</button><button data-tab="tv">Televisões</button><button data-tab="media">Mídias</button><button data-tab="play">Playlists</button><button data-tab="abrir">Abrir TV</button></div>
+<section id="inicio" class="tab"><div class="cards"><div class="card"><div class="muted">Televisões</div><div id="mTv" class="num">0</div></div><div class="card"><div class="muted">Online</div><div id="mOn" class="num">0</div></div><div class="card"><div class="muted">Playlists</div><div id="mPl" class="num">0</div></div><div class="card"><div class="muted">Mídias</div><div id="mMe" class="num">0</div></div></div><div class="panel"><h2>Como usar</h2><p>Cadastre uma TV, envie seus anúncios em <b>Mídias</b>, monte uma <b>Playlist</b> e publique a playlist na TV.</p></div></section>
+<section id="tv" class="tab hidden"><div class="panel"><h2>📺 Televisões</h2><div class="row"><input id="tvName" placeholder="Nome da TV"><input id="tvEst" placeholder="Estabelecimento"><input id="tvAddr" placeholder="Endereço"><button class="btn" onclick="addTV()">Cadastrar TV</button></div></div><div id="tvList" class="panel"></div></section>
+<section id="media" class="tab hidden"><div class="panel"><h2>🖼️ Mídias</h2><form class="row" onsubmit="uploadMedia(event)"><input id="file" type="file" accept="image/*,video/*" required><button class="btn">Enviar mídia</button></form><small>Imagens e vídeos ficam salvos no servidor.</small></div><div id="mediaList" class="panel"></div></section>
+<section id="play" class="tab hidden"><div class="panel"><h2>▶️ Playlists</h2><div class="row"><input id="plName" placeholder="Nome da playlist"><button class="btn" onclick="addPlaylist()">Criar playlist</button></div></div><div id="playList" class="panel"></div></section>
+<section id="abrir" class="tab hidden"><div class="panel"><h2>🖥️ Abrir TV</h2><p>No mesmo computador, abra:</p><p><b>http://localhost:3000/player</b></p><p>Digite o código de ativação da TV. Exemplo: <b>ML-XXXXXX</b>.</p></div></section>
+</div>
+<script>
+let tvs=[],media=[],pls=[];
+
+const $=id=>document.getElementById(id);
+
+async function api(url,opt){
+  let r=await fetch(url,opt);
+  let d=await r.json();
+  if(!r.ok) throw Error(d.error||'Erro');
+  return d;
+}
+
+async function refresh(){
+  try{
+    [tvs,media,pls]=await Promise.all([
+      api('/api/televisions'),
+      api('/api/media'),
+      api('/api/playlists')
+    ]);
+
+    $('mTv').textContent=tvs.length;
+    $('mOn').textContent=tvs.filter(x=>x.online).length;
+    $('mPl').textContent=pls.length;
+    $('mMe').textContent=media.length;
+
+    renderTV();
+    renderMedia();
+    renderPlay();
+  }catch(e){
+    console.error(e);
+  }
+}
+
+function renderTV(){
+  $('tvList').innerHTML=
+    '<h2>TVs cadastradas</h2>'+
+    (
+      tvs.length
+      ? tvs.map(t=>`
+        <div class="item">
+          <div>
+            <b>${esc(t.name)}</b><br>
+            <small>${esc(t.establishment||'')} ${t.address?'— '+esc(t.address):''}</small><br>
+            <span class="badge ${t.online?'on':'off'}">
+              ${t.online?'ONLINE':'OFFLINE'}
+            </span>
+            <span class="badge">
+              Código: ${esc(t.activationCode)}
+            </span>
+          </div>
+          <div>
+            <button class="btn light" onclick="copyCode('${t.activationCode}')">
+              Copiar código
+            </button>
+          </div>
+        </div>
+      `).join('')
+      : '<div class="empty">Nenhuma TV cadastrada.</div>'
+    );
+}
+
+function renderMedia(){
+  $('mediaList').innerHTML=
+    '<h2>Mídias enviadas</h2>'+
+    (
+      media.length
+      ? media.map(m=>`
+        <div class="item">
+          <div>
+            <b>${esc(m.name)}</b><br>
+            <small>${m.type}</small>
+          </div>
+          <a class="btn light" href="${m.url}" target="_blank">Abrir</a>
+        </div>
+      `).join('')
+      : '<div class="empty">Nenhuma mídia enviada.</div>'
+    );
+}
+
+async function renderPlay(){
+  try{
+    const tvs=await api('/api/televisions');
+
+    $('playList').innerHTML=
+      '<h2>Playlists</h2>'+
+      (
+        pls.length
+        ? pls.map(p=>`
+          <div class="item">
+            <div>
+              <b>${esc(p.name)}</b><br>
+              <small>${(p.items||[]).length} mídia(s)</small>
+            </div>
+
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+
+              <select
+                onchange="addItem('${p.id}',this.value);this.value=''"
+                style="padding:9px;border:1px solid #ddd;border-radius:8px">
+                <option value="">Adicionar mídia...</option>
+                ${media.map(m=>
+                  `<option value="${m.id}">${esc(m.name)}</option>`
+                ).join('')}
+              </select>
+
+              <select
+                id="publishTv_${p.id}"
+                style="padding:9px;border:1px solid #ddd;border-radius:8px">
+                <option value="">Publicar na TV...</option>
+                ${tvs.map(t=>
+                  `<option value="${t.id}">
+                    ${esc(t.name)}${t.activated?'':' (não ativada)'}
+                  </option>`
+                ).join('')}
+              </select>
+
+              <button
+                class="btn"
+                onclick="publishPlaylist('${p.id}')">
+                Publicar
+              </button>
+
+            </div>
+          </div>
+        `).join('')
+        : '<div class="empty">Nenhuma playlist criada.</div>'
+      );
+  }catch(e){
+    alert(e.message);
+  }
+}
+
+async function addTV(){
+  try{
+    let n=$('tvName').value.trim();
+
+    if(!n)
+      return alert('Informe o nome da TV.');
+
+    let t=await api('/api/televisions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name:n,
+        establishment:$('tvEst').value.trim(),
+        address:$('tvAddr').value.trim()
+      })
+    });
+
+    alert('TV cadastrada! Código: '+t.activationCode);
+
+    $('tvName').value='';
+    $('tvEst').value='';
+    $('tvAddr').value='';
+
+    refresh();
+  }catch(e){
+    alert(e.message);
+  }
+}
+
+async function uploadMedia(e){
+  e.preventDefault();
+
+  try{
+    let f=$('file').files[0];
+    let fd=new FormData();
+
+    fd.append('file',f);
+
+    await api('/api/media',{
+      method:'POST',
+      body:fd
+    });
+
+    $('file').value='';
+
+    alert('Mídia enviada!');
+    refresh();
+  }catch(e){
+    alert(e.message);
+  }
+}
+
+async function addPlaylist(){
+  try{
+    let n=$('plName').value.trim();
+
+    if(!n)
+      return alert('Informe o nome da playlist.');
+
+    await api('/api/playlists',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:n})
+    });
+
+    $('plName').value='';
+
+    alert('Playlist criada com sucesso!');
+    refresh();
+  }catch(e){
+    alert(e.message);
+  }
+}
+
+async function addItem(pid,mid){
+  if(!mid) return;
+
+  try{
+    await api('/api/playlists/'+pid+'/items',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({mediaId:mid})
+    });
+
+    refresh();
+  }catch(e){
+    alert(e.message);
+  }
+}
+
+async function publishPlaylist(pid){
+  try{
+    const tvId=document.getElementById('publishTv_'+pid)?.value;
+
+    if(!tvId)
+      return alert('Selecione uma TV.');
+
+    const r=await api('/api/televisions/'+tvId,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({playlistId:pid})
+    });
+
+    alert('Playlist publicada na TV: '+(r.name||'TV'));
+    refresh();
+  }catch(e){
+    alert(e.message);
+  }
+}
+
+function copyCode(c){
+  navigator.clipboard?.writeText(c);
+  alert('Código copiado: '+c);
+}
+
+function esc(s){
+  return String(s??'').replace(
+    /[&<>'"]/g,
+    c=>({
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      "'":'&#39;',
+      '"':'&quot;'
+    }[c])
+  );
+}
+
+document.querySelectorAll('.nav button').forEach(b=>
+  b.onclick=()=>{
+    document.querySelectorAll('.nav button')
+      .forEach(x=>x.classList.remove('active'));
+
+    b.classList.add('active');
+
+    document.querySelectorAll('.tab')
+      .forEach(x=>x.classList.add('hidden'));
+
+    $(b.dataset.tab).classList.remove('hidden');
+
+    refresh();
+  }
+);
+
+refresh();
+setInterval(refresh,15000);
+</script>
+</body></html>

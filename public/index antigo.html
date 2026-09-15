@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mídia Local — Dashboard</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f5f6f8;color:#18202a}aside{position:fixed;left:0;top:0;bottom:0;width:230px;background:#111827;color:#fff;padding:24px 16px}h1{font-size:21px;margin:0 0 28px;padding:0 10px}.nav a{display:block;color:#b8c0cc;text-decoration:none;padding:12px 10px;border-radius:9px;margin:3px 0}.nav a:hover,.nav a.active{background:#273244;color:#fff}.main{margin-left:230px;padding:34px;max-width:1300px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}.top h2{margin:0;font-size:27px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:white;border:1px solid #e5e7eb;border-radius:14px;padding:20px}.label{color:#687386;font-size:13px}.value{font-size:29px;font-weight:750;margin-top:7px}.section{background:white;border:1px solid #e5e7eb;border-radius:14px;margin-top:20px;padding:20px}.section h3{margin:0 0 16px}.btn{background:#111827;color:#fff;border:0;border-radius:9px;padding:11px 15px;text-decoration:none;cursor:pointer}.btn.secondary{background:#eef1f5;color:#202938}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.muted{color:#6b7280}
+@media(max-width:900px){aside{width:190px}.main{margin-left:190px}.cards{grid-template-columns:1fr 1fr}}
+</style></head>
+<body><aside><h1>📺 Mídia Local</h1><div class="nav">
+<a class="active" href="/">Dashboard</a><a href="/televisoes">📺 Televisões</a><a href="#">🏪 Estabelecimentos</a><a href="#">👤 Anunciantes</a><a href="#">📣 Campanhas</a><a href="#">▶ Playlists</a><a href="#">🖼 Mídias</a><a href="#">📊 Relatórios</a><a href="#">💰 Financeiro</a>
+</div></aside>
+<main class="main"><div class="top"><div><h2>Dashboard</h2><div class="muted">Controle da sua rede de TVs</div></div><a class="btn" href="/televisoes">Gerenciar TVs</a></div>
+<div class="cards"><div class="card"><div class="label">TVs cadastradas</div><div class="value" id="tvs">—</div></div><div class="card"><div class="label">TVs online</div><div class="value" id="online">—</div></div><div class="card"><div class="label">Playlists</div><div class="value" id="playlists">—</div></div><div class="card"><div class="label">Mídias</div><div class="value" id="media">—</div></div></div>
+<div class="grid"><div class="section"><h3>Como funciona</h3><p class="muted">1. Cadastre a TV do estabelecimento.</p><p class="muted">2. Gere o código de ativação.</p><p class="muted">3. Abra o Player na TV e informe o código.</p><p class="muted">4. Depois você poderá trocar campanhas e playlists remotamente.</p></div>
+<div class="section"><h3>Próximo passo</h3><p class="muted">Depois da ativação das TVs, o próximo módulo é montar anunciantes, campanhas e playlists com programação automática.</p><a class="btn" href="/televisoes">Cadastrar primeira TV</a></div></div>
+</main>
+<script>
+fetch('/api/dashboard').then(r=>r.json()).then(d=>{tvs.textContent=d.televisions;online.textContent=d.online;playlists.textContent=d.playlists;media.textContent=d.media})
+</script></body></html>

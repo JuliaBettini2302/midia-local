@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mídia Local Player</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#000;font-family:Arial;color:#fff;overflow:hidden}.center{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}.center input{padding:15px;width:280px;border-radius:8px;border:0;font-size:18px;text-transform:uppercase;text-align:center}.center button{padding:12px 20px;border:0;border-radius:8px;font-weight:700}.screen{width:100vw;height:100vh;display:none;align-items:center;justify-content:center}.screen img,.screen video{width:100%;height:100%;object-fit:contain}.badge{position:fixed;left:12px;bottom:10px;background:#0009;padding:6px 9px;border-radius:6px;font-size:12px}</style></head>
+<body><div id="login" class="center"><h2>Ativar TV</h2><p>Digite o código fornecido pelo painel.</p><input id="code" maxlength="9" placeholder="ML-ABC123"><button onclick="activate()">Ativar TV</button><div id="msg"></div></div><div id="screen" class="screen"></div><div id="badge" class="badge"></div>
+<script>
+let code=new URLSearchParams(location.search).get('code')||localStorage.getItem('tvCode');
+let items=[],i=0,timer;
+if(code){document.getElementById('code').value=code;activate()}
+async function activate(){
+ code=document.getElementById('code').value.trim().toUpperCase();
+ if(!code)return;
+ let r=await fetch('/api/activate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,deviceName:'TV Player'})});
+ let d=await r.json();
+ if(!r.ok){document.getElementById('msg').textContent=d.error;return}
+ localStorage.setItem('tvCode',code);document.getElementById('login').style.display='none';document.getElementById('screen').style.display='flex';load();
+}
+async function load(){
+ let r=await fetch('/api/player-by-code/'+encodeURIComponent(code));let d=await r.json();
+ if(!r.ok){document.getElementById('msg').textContent=d.error;return}
+ items=d.items||[];document.getElementById('badge').textContent=d.tv.name+(d.playlist?' • '+d.playlist.name:' • Sem playlist');
+ play();
+}
+function play(){
+ clearTimeout(timer);const s=document.getElementById('screen');s.innerHTML='';
+ if(!items.length){s.innerHTML='<div class="center"><h2>TV ativada</h2><p>Aguardando playlist.</p></div>';timer=setTimeout(load,10000);return}
+ const m=items[i%items.length];i++;
+ if(m.type==='video'){const v=document.createElement('video');v.src=m.url;v.autoplay=true;v.muted=true;v.playsInline=true;v.onended=play;s.appendChild(v)}
+ else {const im=document.createElement('img');im.src=m.url;s.appendChild(im);timer=setTimeout(play,10000)}
+}
+setInterval(load,30000);
+</script></body></html>
