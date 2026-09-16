@@ -236,9 +236,25 @@ app.get("/api/televisions", async (_, res) => {
 });// Criar TV
 app.post("/api/televisions", async (req, res) => {
   try {
-    const name = (req.body.name || "").trim();
-    const establishment = (req.body.establishment || "").trim();
-    const address = (req.body.address || "").trim();
+    const name = (
+  req.body.name ||
+  req.body.nome ||
+  req.body.tvName ||
+  req.body.nomeTV ||
+  ""
+).trim();
+
+const establishment = (
+  req.body.establishment ||
+  req.body.estabelecimento ||
+  ""
+).trim();
+
+const address = (
+  req.body.address ||
+  req.body.endereco ||
+  ""
+).trim();
 
     if (!name) {
       return res
