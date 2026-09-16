@@ -3,7 +3,14 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const { Pool } = require("pg");
+const { Pool } = require("pg");
 
+const { createClient } = require("@supabase/supabase-js");
+
+const SUPABASE_URL = "https://fhvqrexbfvnjzzexczgs.supabase.co";
+const SUPABASE_KEY = "sb_publishable_2w3nUPnIa2C0kDApJULeOw_8ubHwv6u";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
