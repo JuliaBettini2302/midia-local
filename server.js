@@ -989,14 +989,42 @@ app.post(
           .json({ error: "Envie um arquivo." });
       }
 
-      const media = {
-        id: id("media"),
-        name: req.file.originalname,
-        url: "/uploads/" + req.file.filename,
-        type: req.file.mimetype.startsWith("video/")
-          ? "video"
-          : "image",
-        createdAt: new Date().toISOString()
+      const fileExt = path.extname(req.file.originalname);
+const fileName =
+  Date.now() +
+  "-" +
+  Math.random().toString(36).slice(2, 8) +
+  fileExt;
+
+const { data: uploadedFile, error: uploadError } =
+  await supabase.storage
+    .from("midia")
+    .upload(fileName, req.file.buffer, {
+      contentType: req.file.mimetype,
+      upsert: false
+    });
+
+if (uploadError) {
+  console.error(uploadError);
+  return res.status(500).json({
+    error: "Erro ao enviar arquivo para o Supabase."
+  });
+}
+
+const { data: publicUrlData } =
+  supabase.storage
+    .from("midia")
+    .getPublicUrl(uploadedFile.path);
+
+const media = {
+  id: id("media"),
+  name: req.file.originalname,
+  url: publicUrlData.publicUrl,
+  type: req.file.mimetype.startsWith("video/")
+    ? "video"
+    : "image",
+  createdAt: new Date().toISOString()
+};
       };
 
       if (usePostgres) {
