@@ -130,7 +130,9 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
-
+const upload = multer({
+  storage: multer.memoryStorage()
+});
 // Páginas
 app.get("/", (_, res) =>
   res.sendFile(path.join(ROOT, "public", "index.html"))
