@@ -1037,7 +1037,6 @@ const media = {
     : "image",
   createdAt: new Date().toISOString()
 };
-      };
 
       if (usePostgres) {
         await pool.query(
