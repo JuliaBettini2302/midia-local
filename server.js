@@ -3,7 +3,6 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const { Pool } = require("pg");
-const { Pool } = require("pg");
 
 const { createClient } = require("@supabase/supabase-js");
 
