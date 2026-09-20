@@ -116,8 +116,8 @@ function save(db) {
   fs.writeFileSync(DATA, JSON.stringify(db, null, 2));
 }
 
-const storage = multer.diskStorage({
-  destination: (_, __, cb) => cb(null, UPLOADS),
+const storage = multer.memoryStorage();
+destination: (_, __, cb) => cb(null, UPLOADS),
 
   filename: (_, file, cb) =>
     cb(
