@@ -953,6 +953,57 @@ app.post("/api/playlists/:id/items", async (req, res) => {
   }
 });
 
+// Excluir playlist
+app.delete("/api/playlists/:id", async (req, res) => {
+  try {
+    const playlistId = req.params.id;
+
+    if (usePostgres) {
+      const result = await pool.query(
+        "SELECT id FROM playlists WHERE id=$1",
+        [playlistId]
+      );
+
+      if (!result.rows.length) {
+        return res.status(404).json({ error: "Playlist não encontrada." });
+      }
+
+      await pool.query(
+        "UPDATE televisions SET playlist_id=NULL WHERE playlist_id=$1",
+        [playlistId]
+      );
+
+      await pool.query(
+        "DELETE FROM playlists WHERE id=$1",
+        [playlistId]
+      );
+
+      return res.json({ ok: true });
+    }
+
+    const db = load();
+    const index = db.playlists.findIndex(p => p.id === playlistId);
+
+    if (index === -1) {
+      return res.status(404).json({ error: "Playlist não encontrada." });
+    }
+
+    db.televisions.forEach(tv => {
+      if (tv.playlistId === playlistId) {
+        tv.playlistId = null;
+      }
+    });
+
+    db.playlists.splice(index, 1);
+    save(db);
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Erro ao excluir playlist." });
+  }
+});
+
 // Listar mídias
 app.get("/api/media", async (_, res) => {
   try {
