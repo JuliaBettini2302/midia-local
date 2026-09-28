@@ -360,92 +360,157 @@ function adValue(id, fallback=''){
 function drawAdFrame(progress=0){
   const canvas=$('adCanvas');
   if(!canvas) return;
-
   const ctx=canvas.getContext('2d');
-  const w=canvas.width, h=canvas.height;
+  const w=canvas.width,h=canvas.height;
 
   const name=adValue('adName','SUA EMPRESA').toUpperCase();
-  const category=adValue('adCategory','Comércio e serviços locais');
+  const category=adValue('adCategory','Comércio local');
   const contact=adValue('adContact','');
   const phrase=adValue('adPhrase','');
 
+  const cat=category.toLowerCase();
+  let accent='#ef4444';
+  let icon='★';
+  if(/celular|eletr|tecn|inform|comput/.test(cat)){accent='#2563eb';icon='▣';}
+  else if(/roupa|moda|íntima|calç|boutique/.test(cat)){accent='#db2777';icon='◆';}
+  else if(/clín|saúde|dent|estét|beleza|salão/.test(cat)){accent='#7c3aed';icon='✦';}
+  else if(/academ|fitness|esport|treino/.test(cat)){accent='#16a34a';icon='↗';}
+  else if(/carro|veícul|moto|auto/.test(cat)){accent='#ea580c';icon='◆';}
+  else if(/comida|rest|lanch|pizza|açai|padaria/.test(cat)){accent='#f59e0b';icon='●';}
+
   ctx.clearRect(0,0,w,h);
 
-  // Fundo elegante e discreto.
-  const bg=ctx.createLinearGradient(0,0,w,h);
-  bg.addColorStop(0,'#0f172a');
-  bg.addColorStop(.55,'#1e293b');
-  bg.addColorStop(1,'#020617');
-  ctx.fillStyle=bg;
+  // Fundo claro, com cara de anúncio comercial.
+  ctx.fillStyle='#f8fafc';
   ctx.fillRect(0,0,w,h);
 
-  // Movimento suave para o vídeo não parecer uma imagem parada.
-  const x1=180+Math.sin(progress*Math.PI*2)*70;
-  const y1=150+Math.cos(progress*Math.PI*2)*35;
-  const x2=1080+Math.cos(progress*Math.PI*2)*55;
-  const y2=560+Math.sin(progress*Math.PI*2)*40;
+  // Faixa colorida animada.
+  const slide=Math.min(1,progress*3);
+  ctx.fillStyle=accent;
+  ctx.fillRect(-w+(w*slide),0,w,720);
 
-  ctx.save();
-  ctx.globalAlpha=.16;
-  ctx.fillStyle='#ffffff';
-  ctx.beginPath(); ctx.arc(x1,y1,210,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(x2,y2,250,0,Math.PI*2); ctx.fill();
-  ctx.restore();
+  // Cartão branco sobre o fundo.
+  ctx.fillStyle='rgba(255,255,255,.97)';
+  ctx.beginPath();
+  ctx.roundRect(55,55,1170,610,34);
+  ctx.fill();
 
-  // Linha de destaque animada.
-  ctx.fillStyle='rgba(255,255,255,.85)';
-  const lineW=90+progress*250;
-  ctx.fillRect(70,605,lineW,4);
-
-  // Logo.
-  if(adLogoImage){
-    const maxW=330,maxH=150;
-    const scale=Math.min(maxW/adLogoImage.width,maxH/adLogoImage.height,1);
-    const lw=adLogoImage.width*scale, lh=adLogoImage.height*scale;
-    const logoX=(w-lw)/2;
-    const logoY=70+Math.sin(progress*Math.PI*2)*5;
-
-    ctx.save();
-    ctx.globalAlpha=Math.min(1,progress*5);
-    ctx.shadowColor='rgba(0,0,0,.35)';
-    ctx.shadowBlur=25;
-    ctx.drawImage(adLogoImage,logoX,logoY,lw,lh);
-    ctx.restore();
-  }
-
-  // Texto principal.
-  const textProgress=Math.max(0,Math.min(1,(progress-.12)/.35));
-  ctx.save();
-  ctx.globalAlpha=textProgress;
-  ctx.fillStyle='#fff';
-  ctx.font='700 66px Arial';
-  ctx.textAlign='center';
-  wrapCanvasTextCentered(ctx,name,w/2,335,900,72);
-
-  ctx.fillStyle='rgba(255,255,255,.82)';
-  ctx.font='400 32px Arial';
-  wrapCanvasTextCentered(ctx,phrase || category,w/2,430,800,44);
-  ctx.restore();
-
-  // Rodapé com contato.
-  const footerProgress=Math.max(0,Math.min(1,(progress-.55)/.30));
-  ctx.save();
-  ctx.globalAlpha=footerProgress;
-  ctx.fillStyle='rgba(0,0,0,.34)';
-  ctx.fillRect(0,625,w,95);
+  // Faixa superior.
+  ctx.fillStyle=accent;
+  ctx.beginPath();
+  ctx.roundRect(55,55,1170,95,34);
+  ctx.fill();
+  ctx.fillRect(55,105,1170,45);
 
   ctx.fillStyle='#fff';
-  ctx.font='700 30px Arial';
+  ctx.font='700 25px Arial';
   ctx.textAlign='left';
-  ctx.fillText(contact,70,682);
+  ctx.fillText('CONHEÇA',90,115);
 
-  ctx.font='700 22px Arial';
+  ctx.font='700 25px Arial';
   ctx.textAlign='right';
-  ctx.fillStyle='rgba(255,255,255,.72)';
-  ctx.fillText('MÍDIA LOCAL',1210,682);
+  ctx.fillText('COMÉRCIO LOCAL',1190,115);
+
+  // Logo em cartão.
+  const logoIn=Math.max(0,Math.min(1,(progress-.08)/.22));
+  ctx.save();
+  ctx.globalAlpha=logoIn;
+  ctx.fillStyle='#fff';
+  ctx.shadowColor='rgba(15,23,42,.16)';
+  ctx.shadowBlur=24;
+  ctx.beginPath();
+  ctx.roundRect(95,190,330,250,28);
+  ctx.fill();
+  if(adLogoImage){
+    const maxW=270,maxH=175;
+    const scale=Math.min(maxW/adLogoImage.width,maxH/adLogoImage.height,1);
+    const lw=adLogoImage.width*scale,lh=adLogoImage.height*scale;
+    ctx.drawImage(adLogoImage,95+(330-lw)/2,190+(250-lh)/2,lw,lh);
+  }else{
+    ctx.fillStyle='#64748b';
+    ctx.font='700 28px Arial';
+    ctx.textAlign='center';
+    ctx.fillText('SUA LOGO',260,320);
+  }
+  ctx.restore();
+
+  // Ícone de segmento.
+  const iconIn=Math.max(0,Math.min(1,(progress-.18)/.25));
+  ctx.save();
+  ctx.globalAlpha=iconIn;
+  ctx.fillStyle=accent;
+  ctx.beginPath();
+  ctx.arc(500,205,42,0,Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle='#fff';
+  ctx.font='700 34px Arial';
+  ctx.textAlign='center';
+  ctx.fillText(icon,500,217);
+  ctx.restore();
+
+  // Nome da empresa.
+  const textIn=Math.max(0,Math.min(1,(progress-.22)/.28));
+  ctx.save();
+  ctx.globalAlpha=textIn;
+  ctx.fillStyle='#111827';
+  ctx.textAlign='left';
+  ctx.font='800 62px Arial';
+  wrapCanvasText(ctx,name,500,295,650,70,2);
+
+  ctx.fillStyle=accent;
+  ctx.font='700 30px Arial';
+  wrapCanvasText(ctx,category,500,450,620,38,2);
+
+  if(phrase){
+    ctx.fillStyle='#475569';
+    ctx.font='400 27px Arial';
+    wrapCanvasText(ctx,phrase,500,525,620,36,2);
+  }
+  ctx.restore();
+
+  // Chamada final.
+  const ctaIn=Math.max(0,Math.min(1,(progress-.55)/.25));
+  ctx.save();
+  ctx.globalAlpha=ctaIn;
+  ctx.fillStyle=accent;
+  ctx.beginPath();
+  ctx.roundRect(95,535,330,78,39);
+  ctx.fill();
+
+  ctx.fillStyle='#fff';
+  ctx.font='800 28px Arial';
+  ctx.textAlign='center';
+  ctx.fillText(contact || 'FALE COM A GENTE',260,584);
+
+  ctx.fillStyle='#111827';
+  ctx.font='700 22px Arial';
+  ctx.textAlign='left';
+  ctx.fillText('ENCONTRE • CONHEÇA • CONFIRA',500,585);
+  ctx.restore();
+
+  // Movimento final discreto.
+  ctx.save();
+  ctx.globalAlpha=Math.max(0,(progress-.75)*1.8);
+  ctx.fillStyle=accent;
+  ctx.fillRect(55,650,1170,10);
   ctx.restore();
 
   ctx.textAlign='left';
+}
+
+function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines=2){
+  const words=String(text||'').split(' ');
+  const lines=[];
+  let line='';
+  for(const word of words){
+    const test=line?line+' '+word:word;
+    if(ctx.measureText(test).width>maxWidth && line){
+      lines.push(line);
+      line=word;
+    }else line=test;
+  }
+  if(line) lines.push(line);
+  lines.slice(0,maxLines).forEach((lineText,i)=>ctx.fillText(lineText,x,y+i*lineHeight));
 }
 
 function wrapCanvasTextCentered(ctx,text,centerX,y,maxWidth,lineHeight){
