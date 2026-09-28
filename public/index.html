@@ -148,6 +148,11 @@ async function renderPlay(){
                 onclick="publishPlaylist('${p.id}')">
                 Publicar
               </button>
+              <button
+                class="btn light"
+                onclick="deletePlaylist('${p.id}')">
+                Excluir
+              </button>
 
             </div>
           </div>
@@ -156,6 +161,20 @@ async function renderPlay(){
       );
   }catch(e){
     alert(e.message);
+  }
+}
+
+async function deletePlaylist(id){
+  const playlist = pls.find(m => m.id === id);
+  const nome = playlist ? playlist.name : 'esta playlist';
+
+  if(!confirm('Excluir "' + nome + '"?\nEla será retirada das TVs que estiverem usando essa playlist.')) return;
+
+  try{
+    await api('/api/playlists/' + encodeURIComponent(id), {method:'DELETE'});
+    await load();
+  }catch(e){
+    alert(e.message || 'Não foi possível excluir a playlist.');
   }
 }
 
