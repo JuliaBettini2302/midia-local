@@ -979,7 +979,104 @@ app.get("/api/media", async (_, res) => {
       error: "Erro ao listar mídias."
     });
   }
-});// Upload de mídia
+
+  // Excluir mídia
+  app.delete("/api/media/:id", async (req, res) => {
+    const mediaId = req.params.id;
+
+    try {
+      if (usePostgres) {
+        const mediaResult = await pool.query(
+          "SELECT * FROM media WHERE id=$1",
+          [mediaId]
+        );
+
+        if (!mediaResult.rows.length) {
+          return res.status(404).json({ error: "Mídia não encontrada." });
+        }
+
+        const media = mediaResult.rows[0];
+
+        // Remove o arquivo do Supabase quando a URL pertence ao bucket "midia".
+        if (media.url && media.url.includes("/storage/v1/object/public/midia/")) {
+          const marker = "/storage/v1/object/public/midia/";
+          const storagePath = decodeURIComponent(media.url.split(marker)[1]);
+
+          const { error: storageError } = await supabase.storage
+            .from("midia")
+            .remove([storagePath]);
+
+          if (storageError) {
+            console.error("Erro ao remover arquivo do Supabase:", storageError);
+          }
+        }
+
+        // Retira a mídia de todas as playlists antes de apagar o registro.
+        const playlistsResult = await pool.query(
+          "SELECT id, items FROM playlists"
+        );
+
+        for (const playlist of playlistsResult.rows) {
+          const items = Array.isArray(playlist.items) ? playlist.items : [];
+          const filtered = items.filter(item => item !== mediaId);
+
+          if (filtered.length !== items.length) {
+            await pool.query(
+              "UPDATE playlists SET items=$1::jsonb WHERE id=$2",
+              [JSON.stringify(filtered), playlist.id]
+            );
+          }
+        }
+
+        await pool.query(
+          "DELETE FROM media WHERE id=$1",
+          [mediaId]
+        );
+
+        return res.json({ ok: true });
+      }
+
+      const db = load();
+      const mediaIndex = db.media.findIndex(m => m.id === mediaId);
+
+      if (mediaIndex === -1) {
+        return res.status(404).json({ error: "Mídia não encontrada." });
+      }
+
+      const media = db.media[mediaIndex];
+
+      if (media.url && media.url.includes("/storage/v1/object/public/midia/")) {
+        const marker = "/storage/v1/object/public/midia/";
+        const storagePath = decodeURIComponent(media.url.split(marker)[1]);
+
+        const { error: storageError } = await supabase.storage
+          .from("midia")
+          .remove([storagePath]);
+
+        if (storageError) {
+          console.error("Erro ao remover arquivo do Supabase:", storageError);
+        }
+      }
+
+      db.playlists.forEach(playlist => {
+        playlist.items = Array.isArray(playlist.items)
+          ? playlist.items.filter(item => item !== mediaId)
+          : [];
+      });
+
+      db.media.splice(mediaIndex, 1);
+      save(db);
+
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({
+        error: "Erro ao excluir mídia."
+      });
+    }
+  });
+
+// Upload de mídia
 app.post(
   "/api/media",
   upload.single("file"),
