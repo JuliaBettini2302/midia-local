@@ -16,22 +16,31 @@
 <section id="media" class="tab hidden"><div class="panel"><h2>🖼️ Mídias</h2><form class="row" onsubmit="uploadMedia(event)"><input id="file" type="file" accept="image/*,video/*" required><button class="btn">Enviar mídia</button></form><small>Imagens e vídeos ficam salvos no servidor.</small></div><div id="mediaList" class="panel"></div></section>
 <section id="ad" class="tab hidden">
 <div class="panel">
-  <h2>✨ Criar propaganda</h2>
-  <p class="muted">Crie uma propaganda da empresa para passar na TV. A logo identifica a marca e o contato aparece sempre no rodapé.</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start">
+  <h2>🎬 Criar anúncio</h2>
+  <p class="muted">Crie um vídeo curto e profissional para uma empresa local. Você não precisa de fotos ou vídeos: basta a logo e as informações básicas.</p>
+
+  <div style="display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start">
     <div>
       <div class="row" style="margin-bottom:10px"><input id="adName" placeholder="Nome da empresa *"></div>
-      <div class="row" style="margin-bottom:10px"><input id="adDescription" placeholder="O que a empresa faz? *"></div>
-      <div class="row" style="margin-bottom:10px"><input id="adPhrase" placeholder="Frase principal (opcional)"></div>
+      <div class="row" style="margin-bottom:10px"><input id="adCategory" placeholder="O que a empresa faz? *"></div>
       <div class="row" style="margin-bottom:10px"><input id="adContact" placeholder="WhatsApp / telefone *"></div>
-      <div class="row" style="margin-bottom:10px"><input id="adLogo" type="file" accept="image/*"></div>
-      <div class="row" style="margin-bottom:10px"><input id="adPhoto" type="file" accept="image/*" multiple></div>
-      <button class="btn" type="button" onclick="generateAd()">✨ Criar propaganda</button>
+      <div class="row" style="margin-bottom:10px"><input id="adPhrase" placeholder="Frase curta (opcional)"></div>
+      <div class="row" style="margin-bottom:14px"><input id="adLogo" type="file" accept="image/*"></div>
+
+      <button class="btn" type="button" onclick="generateAd()" style="width:100%;padding:13px">
+        🎬 Criar vídeo
+      </button>
+
       <div id="adStatus" class="muted" style="margin-top:12px"></div>
-      <small>Logo e contato são obrigatórios. Preço e promoção são opcionais e não precisam aparecer.</small>
+
+      <small>
+        O vídeo tem aproximadamente 12 segundos e já fica pronto para entrar em uma playlist.
+      </small>
     </div>
+
     <div>
-      <canvas id="adCanvas" width="1280" height="720" style="width:100%;border-radius:12px;background:#111827;display:block"></canvas>
+      <canvas id="adCanvas" width="1280" height="720"
+        style="width:100%;border-radius:14px;background:#111827;display:block"></canvas>
     </div>
   </div>
 </div>
@@ -342,91 +351,122 @@ async function publishPlaylist(pid){
 }
 
 
-let adPhotoImage = null;
 let adLogoImage = null;
-let adPreviewAnimation = null;
 
-function drawAdFrame(progress = 0){
-  const canvas = $('adCanvas');
+function adValue(id, fallback=''){
+  return $(id)?.value.trim() || fallback;
+}
+
+function drawAdFrame(progress=0){
+  const canvas=$('adCanvas');
   if(!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
 
-  const name = $('adName')?.value.trim() || 'SUA EMPRESA';
-  const description = $('adDescription')?.value.trim() || 'Sua empresa, seus produtos e serviços.';
-  const phrase = $('adPhrase')?.value.trim() || '';
-  const contact = $('adContact')?.value.trim() || '';
+  const ctx=canvas.getContext('2d');
+  const w=canvas.width, h=canvas.height;
 
-  const bg = ctx.createLinearGradient(0,0,w,h);
-  bg.addColorStop(0,'#0b1020');
-  bg.addColorStop(.55,'#172554');
+  const name=adValue('adName','SUA EMPRESA').toUpperCase();
+  const category=adValue('adCategory','Comércio e serviços locais');
+  const contact=adValue('adContact','');
+  const phrase=adValue('adPhrase','');
+
+  ctx.clearRect(0,0,w,h);
+
+  // Fundo elegante e discreto.
+  const bg=ctx.createLinearGradient(0,0,w,h);
+  bg.addColorStop(0,'#0f172a');
+  bg.addColorStop(.55,'#1e293b');
   bg.addColorStop(1,'#020617');
-  ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle=bg;
+  ctx.fillRect(0,0,w,h);
 
-  if(adPhotoImage){
-    const zoom=1.04+progress*.06;
-    const scale=Math.max(w/adPhotoImage.width,h/adPhotoImage.height)*zoom;
-    const iw=adPhotoImage.width*scale, ih=adPhotoImage.height*scale;
-    ctx.save(); ctx.globalAlpha=.72;
-    ctx.drawImage(adPhotoImage,(w-iw)/2,(h-ih)/2,iw,ih);
-    ctx.restore();
-    const shade=ctx.createLinearGradient(0,0,w,0);
-    shade.addColorStop(0,'rgba(2,6,23,.92)');
-    shade.addColorStop(.48,'rgba(2,6,23,.48)');
-    shade.addColorStop(1,'rgba(2,6,23,.12)');
-    ctx.fillStyle=shade; ctx.fillRect(0,0,w,h);
-  }
+  // Movimento suave para o vídeo não parecer uma imagem parada.
+  const x1=180+Math.sin(progress*Math.PI*2)*70;
+  const y1=150+Math.cos(progress*Math.PI*2)*35;
+  const x2=1080+Math.cos(progress*Math.PI*2)*55;
+  const y2=560+Math.sin(progress*Math.PI*2)*40;
 
-  ctx.fillStyle='rgba(255,255,255,.10)';
-  ctx.fillRect(0,h-105,w,105);
+  ctx.save();
+  ctx.globalAlpha=.16;
+  ctx.fillStyle='#ffffff';
+  ctx.beginPath(); ctx.arc(x1,y1,210,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x2,y2,250,0,Math.PI*2); ctx.fill();
+  ctx.restore();
 
+  // Linha de destaque animada.
+  ctx.fillStyle='rgba(255,255,255,.85)';
+  const lineW=90+progress*250;
+  ctx.fillRect(70,605,lineW,4);
+
+  // Logo.
   if(adLogoImage){
-    const maxW=210,maxH=82;
+    const maxW=330,maxH=150;
     const scale=Math.min(maxW/adLogoImage.width,maxH/adLogoImage.height,1);
     const lw=adLogoImage.width*scale, lh=adLogoImage.height*scale;
+    const logoX=(w-lw)/2;
+    const logoY=70+Math.sin(progress*Math.PI*2)*5;
+
     ctx.save();
-    ctx.globalAlpha=.98;
-    ctx.drawImage(adLogoImage,70,55,lw,lh);
+    ctx.globalAlpha=Math.min(1,progress*5);
+    ctx.shadowColor='rgba(0,0,0,.35)';
+    ctx.shadowBlur=25;
+    ctx.drawImage(adLogoImage,logoX,logoY,lw,lh);
     ctx.restore();
-  }else{
-    ctx.fillStyle='#fff'; ctx.font='700 34px Arial'; ctx.fillText(name.toUpperCase(),70,105);
   }
 
+  // Texto principal.
+  const textProgress=Math.max(0,Math.min(1,(progress-.12)/.35));
+  ctx.save();
+  ctx.globalAlpha=textProgress;
   ctx.fillStyle='#fff';
-  ctx.font='700 64px Arial';
-  wrapCanvasText(ctx, name.toUpperCase(), 70, 245, 610, 72);
+  ctx.font='700 66px Arial';
+  ctx.textAlign='center';
+  wrapCanvasTextCentered(ctx,name,w/2,335,900,72);
 
-  ctx.fillStyle='rgba(255,255,255,.92)';
-  ctx.font='400 34px Arial';
-  wrapCanvasText(ctx, phrase || description, 70, 350, 600, 48);
+  ctx.fillStyle='rgba(255,255,255,.82)';
+  ctx.font='400 32px Arial';
+  wrapCanvasTextCentered(ctx,phrase || category,w/2,430,800,44);
+  ctx.restore();
 
-  if(phrase){
-    ctx.fillStyle='rgba(255,255,255,.78)';
-    ctx.font='400 27px Arial';
-    wrapCanvasText(ctx, description, 70, 475, 560, 38);
-  }
+  // Rodapé com contato.
+  const footerProgress=Math.max(0,Math.min(1,(progress-.55)/.30));
+  ctx.save();
+  ctx.globalAlpha=footerProgress;
+  ctx.fillStyle='rgba(0,0,0,.34)';
+  ctx.fillRect(0,625,w,95);
 
   ctx.fillStyle='#fff';
   ctx.font='700 30px Arial';
-  ctx.fillText(contact,70,675);
+  ctx.textAlign='left';
+  ctx.fillText(contact,70,682);
 
-  ctx.fillStyle='#fff';
-  ctx.font='700 24px Arial';
+  ctx.font='700 22px Arial';
   ctx.textAlign='right';
-  ctx.fillText('MÍDIA LOCAL',1210,675);
+  ctx.fillStyle='rgba(255,255,255,.72)';
+  ctx.fillText('MÍDIA LOCAL',1210,682);
+  ctx.restore();
+
   ctx.textAlign='left';
 }
 
-function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight){
+function wrapCanvasTextCentered(ctx,text,centerX,y,maxWidth,lineHeight){
   const words=String(text||'').split(' ');
   let line='';
+  const lines=[];
+
   for(const word of words){
     const test=line?line+' '+word:word;
-    if(ctx.measureText(test).width>maxWidth&&line){
-      ctx.fillText(line,x,y); line=word; y+=lineHeight;
-    }else line=test;
+    if(ctx.measureText(test).width>maxWidth && line){
+      lines.push(line);
+      line=word;
+    }else{
+      line=test;
+    }
   }
-  if(line) ctx.fillText(line,x,y);
+  if(line) lines.push(line);
+
+  lines.slice(0,2).forEach((item,index)=>{
+    ctx.fillText(item,centerX,y+index*lineHeight);
+  });
 }
 
 function loadImageFile(file){
@@ -447,85 +487,114 @@ function loadImageFile(file){
 async function previewAd(){
   try{
     adLogoImage=await loadImageFile($('adLogo')?.files?.[0]);
-    const photo=$('adPhoto')?.files?.[0];
-    adPhotoImage=await loadImageFile(photo);
     drawAdFrame(0);
-  }catch(e){ console.error(e); }
+  }catch(e){
+    console.error(e);
+  }
 }
 
 async function generateAd(){
   const status=$('adStatus');
   const name=$('adName').value.trim();
-  const description=$('adDescription').value.trim();
+  const category=$('adCategory').value.trim();
   const contact=$('adContact').value.trim();
   const logo=$('adLogo').files[0];
-  const photos=$('adPhoto').files;
 
-  if(!name||!description||!contact||!logo){
-    return alert('Preencha nome, descrição, contato e escolha a logo da empresa.');
+  if(!name || !category || !contact || !logo){
+    return alert('Preencha nome, segmento, contato e escolha a logo.');
   }
-  if(!photos.length){
-    return alert('Escolha pelo menos uma foto da empresa, produto ou serviço.');
-  }
-  if(!window.MediaRecorder) return alert('Seu navegador não suporta a criação automática de vídeos.');
 
-  status.textContent='Preparando a propaganda... não feche esta página.';
+  if(!window.MediaRecorder){
+    return alert('Seu navegador não suporta a criação automática de vídeos.');
+  }
+
+  status.textContent='Criando o vídeo... não feche esta página.';
 
   try{
     await previewAd();
-    await new Promise(r=>setTimeout(r,250));
+    await new Promise(r=>setTimeout(r,200));
 
     const canvas=$('adCanvas');
-    const stream=canvas.captureStream(25);
-    const mimeTypes=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
-    const mimeType=mimeTypes.find(x=>MediaRecorder.isTypeSupported(x));
-    if(!mimeType) throw new Error('O navegador não conseguiu criar o vídeo.');
+    const stream=canvas.captureStream(30);
 
-    const recorder=new MediaRecorder(stream,{mimeType,videoBitsPerSecond:2200000});
+    const mimeTypes=[
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+    const mimeType=mimeTypes.find(x=>MediaRecorder.isTypeSupported(x));
+
+    if(!mimeType){
+      throw new Error('O navegador não conseguiu criar o vídeo.');
+    }
+
+    const recorder=new MediaRecorder(stream,{
+      mimeType,
+      videoBitsPerSecond:3000000
+    });
+
     const chunks=[];
-    recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+    recorder.ondataavailable=e=>{
+      if(e.data.size) chunks.push(e.data);
+    };
+
     const stopped=new Promise((resolve,reject)=>{
       recorder.onstop=resolve;
       recorder.onerror=e=>reject(e.error||new Error('Erro na gravação.'));
     });
 
+    const duration=12000;
     const start=performance.now();
+
     function animate(now){
-      const p=Math.min(1,(now-start)/9000);
-      drawAdFrame(p);
-      if(p<1) adPreviewAnimation=requestAnimationFrame(animate);
+      const progress=Math.min(1,(now-start)/duration);
+      drawAdFrame(progress);
+
+      if(progress<1){
+        requestAnimationFrame(animate);
+      }
     }
 
     recorder.start();
-    adPreviewAnimation=requestAnimationFrame(animate);
-    await new Promise(r=>setTimeout(r,9200));
+    requestAnimationFrame(animate);
+
+    await new Promise(r=>setTimeout(r,duration+250));
+
     if(recorder.state!=='inactive') recorder.stop();
     await stopped;
+
     stream.getTracks().forEach(t=>t.stop());
 
     const blob=new Blob(chunks,{type:'video/webm'});
     const fd=new FormData();
+
     fd.append('file',blob,'propaganda.webm');
     fd.append('name',name+' - Propaganda');
 
-    status.textContent='Finalizando a propaganda no servidor...';
-    await api('/api/ads',{method:'POST',body:fd});
+    status.textContent='Salvando o vídeo...';
 
-    status.textContent='Propaganda criada! Ela já está em Mídias.';
-    alert('Propaganda criada! Ela já está disponível em Mídias para entrar em uma playlist.');
+    await api('/api/ads',{
+      method:'POST',
+      body:fd
+    });
+
+    status.textContent='Vídeo criado com sucesso!';
+    alert('Vídeo criado! Ele já está disponível em Mídias para entrar em uma playlist.');
+
     refresh();
   }catch(e){
     console.error(e);
     status.textContent='';
-    alert(e.message||'Não foi possível criar a propaganda.');
+    alert(e.message||'Não foi possível criar o vídeo.');
   }
 }
 
 document.getElementById('adLogo')?.addEventListener('change',previewAd);
-document.getElementById('adPhoto')?.addEventListener('change',previewAd);
-['adName','adDescription','adPhrase','adContact'].forEach(id=>{
+
+['adName','adCategory','adPhrase','adContact'].forEach(id=>{
   document.getElementById(id)?.addEventListener('input',()=>drawAdFrame(0));
 });
+
 drawAdFrame(0);
 
 function copyCode(c){
