@@ -117,16 +117,6 @@ function save(db) {
 }
 
 const storage = multer.memoryStorage();
-destination: (_, __, cb) => cb(null, UPLOADS),
-
-  filename: (_, file, cb) =>
-    cb(
-      null,
-      Date.now() +
-        "-" +
-        file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")
-    )
-});
 
 const upload = multer({ storage });
 // Páginas
