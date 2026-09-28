@@ -3,6 +3,8 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const { Pool } = require("pg");
+const { spawn } = require("child_process");
+const os = require("os");
 
 const { createClient } = require("@supabase/supabase-js");
 
@@ -1127,6 +1129,130 @@ app.get("/api/media", async (_, res) => {
       });
     }
   });
+
+
+// Criar anúncio em vídeo
+app.post(
+  "/api/ads",
+  upload.single("file"),
+  async (req, res) => {
+    let inputPath = "";
+    let outputPath = "";
+
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "O vídeo do anúncio não foi recebido." });
+      }
+
+      const adName = (
+        req.body.name ||
+        "Anúncio Mídia Local"
+      ).trim();
+
+      const base = "midia-local-ad-" + Date.now();
+      inputPath = path.join(os.tmpdir(), base + ".webm");
+      outputPath = path.join(os.tmpdir(), base + ".mp4");
+
+      fs.writeFileSync(inputPath, req.file.buffer);
+
+      await new Promise((resolve, reject) => {
+        const ff = spawn("ffmpeg", [
+          "-y",
+          "-i", inputPath,
+          "-c:v", "libx264",
+          "-preset", "veryfast",
+          "-pix_fmt", "yuv420p",
+          "-movflags", "+faststart",
+          "-an",
+          outputPath
+        ]);
+
+        let stderr = "";
+        ff.stderr.on("data", chunk => {
+          stderr += chunk.toString();
+        });
+
+        ff.on("error", reject);
+
+        ff.on("close", code => {
+          if (code === 0) return resolve();
+          reject(new Error("FFmpeg não conseguiu converter o anúncio. " + stderr.slice(-1200)));
+        });
+      });
+
+      const videoBuffer = fs.readFileSync(outputPath);
+
+      const fileName =
+        Date.now() +
+        "-" +
+        Math.random().toString(36).slice(2, 8) +
+        "-anuncio.mp4";
+
+      const { data: uploadedFile, error: uploadError } =
+        await supabase.storage
+          .from("midia")
+          .upload(fileName, videoBuffer, {
+            contentType: "video/mp4",
+            upsert: false
+          });
+
+      if (uploadError) {
+        console.error(uploadError);
+        return res.status(500).json({
+          error: "O anúncio foi criado, mas não foi possível salvá-lo."
+        });
+      }
+
+      const { data: publicUrlData } =
+        supabase.storage
+          .from("midia")
+          .getPublicUrl(uploadedFile.path);
+
+      const media = {
+        id: id("media"),
+        name: adName.endsWith(".mp4") ? adName : adName + ".mp4",
+        url: publicUrlData.publicUrl,
+        type: "video",
+        createdAt: new Date().toISOString()
+      };
+
+      if (usePostgres) {
+        await pool.query(
+          `INSERT INTO media
+           (id, name, url, type, created_at)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            media.id,
+            media.name,
+            media.url,
+            media.type,
+            media.createdAt
+          ]
+        );
+
+        return res.json(media);
+      }
+
+      const db = load();
+      db.media.push(media);
+      save(db);
+
+      res.json(media);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({
+        error: e.message || "Erro ao criar anúncio."
+      });
+    } finally {
+      try {
+        if (inputPath && fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+        if (outputPath && fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+      } catch (cleanupError) {
+        console.error("Erro ao limpar arquivos temporários:", cleanupError);
+      }
+    }
+  }
+);
 
 // Upload de mídia
 app.post(
