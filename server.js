@@ -979,8 +979,9 @@ app.get("/api/media", async (_, res) => {
       error: "Erro ao listar mídias."
     });
   }
+});
 
-  // Excluir mídia
+// Excluir mídia
   app.delete("/api/media/:id", async (req, res) => {
     const mediaId = req.params.id;
 
