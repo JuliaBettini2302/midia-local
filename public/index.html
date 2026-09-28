@@ -67,9 +67,12 @@ function renderTV(){
               Código: ${esc(t.activationCode)}
             </span>
           </div>
-          <div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button class="btn light" onclick="copyCode('${t.activationCode}')">
               Copiar código
+            </button>
+            <button class="btn light" onclick="deleteTV('${t.id}')">
+              Excluir
             </button>
           </div>
         </div>
@@ -175,6 +178,20 @@ async function deletePlaylist(id){
     await load();
   }catch(e){
     alert(e.message || 'Não foi possível excluir a playlist.');
+  }
+}
+
+async function deleteTV(id){
+  const tv = tvs.find(t => t.id === id);
+  const nome = tv ? tv.name : 'esta TV';
+
+  if(!confirm('Excluir "' + nome + '"?')) return;
+
+  try{
+    await api('/api/televisions/' + encodeURIComponent(id), {method:'DELETE'});
+    await load();
+  }catch(e){
+    alert(e.message || 'Não foi possível excluir a TV.');
   }
 }
 
