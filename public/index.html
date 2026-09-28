@@ -90,6 +90,7 @@ function renderMedia(){
             <small>${m.type}</small>
           </div>
           <a class="btn light" href="${m.url}" target="_blank">Abrir</a>
+          <button class="btn light" type="button" onclick="deleteMedia('${m.id}')">Excluir</button>
         </div>
       `).join('')
       : '<div class="empty">Nenhuma mídia enviada.</div>'
@@ -184,6 +185,20 @@ async function addTV(){
     refresh();
   }catch(e){
     alert(e.message);
+  }
+}
+
+async function deleteMedia(id){
+  const mediaItem = media.find(m => m.id === id);
+  const nome = mediaItem ? mediaItem.name : 'esta mídia';
+
+  if(!confirm('Excluir "' + nome + '"?\nEla também será retirada das playlists.')) return;
+
+  try{
+    await api('/api/media/' + encodeURIComponent(id), {method:'DELETE'});
+    await load();
+  }catch(e){
+    alert(e.message || 'Não foi possível excluir a mídia.');
   }
 }
 
