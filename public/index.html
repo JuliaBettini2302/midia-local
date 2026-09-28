@@ -15,8 +15,7 @@
 <section id="tv" class="tab hidden"><div class="panel"><h2>📺 Televisões</h2><div class="row"><input id="tvName" placeholder="Nome da TV"><input id="tvEst" placeholder="Estabelecimento"><input id="tvAddr" placeholder="Endereço"><button class="btn" onclick="addTV()">Cadastrar TV</button></div></div><div id="tvList" class="panel"></div></section>
 <section id="media" class="tab hidden"><div class="panel"><h2>🖼️ Mídias</h2><form class="row" onsubmit="uploadMedia(event)"><input id="file" type="file" accept="image/*,video/*" required><button class="btn">Enviar mídia</button></form><small>Imagens e vídeos ficam salvos no servidor.</small></div><div id="mediaList" class="panel"></div></section>
 <section id="play" class="tab hidden"><div class="panel"><h2>▶️ Playlists</h2><div class="row"><input id="plName" placeholder="Nome da playlist"><button class="btn" onclick="addPlaylist()">Criar playlist</button></div></div><div id="playList" class="panel"></div></section>
-<section id="abrir" class="tab hidden"><div class="panel"><h2>🖥️ Abrir TV</h2><p>No mesmo computador, abra:</p><p><b>http://localhost:3000/player</b></p><p>Digite o código de ativação da TV. Exemplo: <b>ML-XXXXXX</b>.</p></div></section>
-</div>
+<section id="abrir" class="tab hidden"><div class="panel"><h2>🖥️ Abrir TV</h2><p>Na TV ou no navegador onde você quer reproduzir a programação, abra:</p><p><b>https://midia-local.onrender.com/player</b></p><p>Digite o código de ativação da TV. Exemplo: <b>ML-XXXXXX</b>.</p></div></section>
 <script>
 let tvs=[],media=[],pls=[];
 
