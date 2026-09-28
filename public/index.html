@@ -10,10 +10,32 @@
 <body>
 <header><h1>📺 Mídia Local</h1><span>Painel de controle</span></header>
 <div class="wrap">
-<div class="nav"><button class="active" data-tab="inicio">Início</button><button data-tab="tv">Televisões</button><button data-tab="media">Mídias</button><button data-tab="play">Playlists</button><button data-tab="abrir">Abrir TV</button></div>
+<div class="nav"><button class="active" data-tab="inicio">Início</button><button data-tab="tv">Televisões</button><button data-tab="media">Mídias</button><button data-tab="play">Playlists</button><button data-tab="ad">Criar anúncio</button><button data-tab="abrir">Abrir TV</button></div>
 <section id="inicio" class="tab"><div class="cards"><div class="card"><div class="muted">Televisões</div><div id="mTv" class="num">0</div></div><div class="card"><div class="muted">Online</div><div id="mOn" class="num">0</div></div><div class="card"><div class="muted">Playlists</div><div id="mPl" class="num">0</div></div><div class="card"><div class="muted">Mídias</div><div id="mMe" class="num">0</div></div></div><div class="panel"><h2>Como usar</h2><p>Cadastre uma TV, envie seus anúncios em <b>Mídias</b>, monte uma <b>Playlist</b> e publique a playlist na TV.</p></div></section>
 <section id="tv" class="tab hidden"><div class="panel"><h2>📺 Televisões</h2><div class="row"><input id="tvName" placeholder="Nome da TV"><input id="tvEst" placeholder="Estabelecimento"><input id="tvAddr" placeholder="Endereço"><button class="btn" onclick="addTV()">Cadastrar TV</button></div></div><div id="tvList" class="panel"></div></section>
 <section id="media" class="tab hidden"><div class="panel"><h2>🖼️ Mídias</h2><form class="row" onsubmit="uploadMedia(event)"><input id="file" type="file" accept="image/*,video/*" required><button class="btn">Enviar mídia</button></form><small>Imagens e vídeos ficam salvos no servidor.</small></div><div id="mediaList" class="panel"></div></section>
+<section id="ad" class="tab hidden">
+<div class="panel">
+  <h2>🎬 Criar anúncio</h2>
+  <p class="muted">Preencha os campos e o Mídia Local gera um vídeo horizontal de 8 segundos, pronto para entrar em uma playlist.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
+    <div>
+      <div class="row" style="margin-bottom:10px"><input id="adName" placeholder="Nome do anúncio" value="Anúncio Promoção"></div>
+      <div class="row" style="margin-bottom:10px"><input id="adTitle" placeholder="Título" value="OFERTA ESPECIAL"></div>
+      <div class="row" style="margin-bottom:10px"><input id="adText" placeholder="Texto do anúncio" value="Aproveite por tempo limitado!"></div>
+      <div class="row" style="margin-bottom:10px"><input id="adPrice" placeholder="Preço ou condição" value="R$ 39,90"></div>
+      <div class="row" style="margin-bottom:10px"><input id="adContact" placeholder="WhatsApp / telefone" value="(28) 99999-9999"></div>
+      <div class="row" style="margin-bottom:10px"><input id="adPhoto" type="file" accept="image/*"></div>
+      <button class="btn" type="button" onclick="generateAd()">✨ Gerar anúncio</button>
+      <div id="adStatus" class="muted" style="margin-top:12px"></div>
+    </div>
+    <div>
+      <canvas id="adCanvas" width="1280" height="720" style="width:100%;border-radius:12px;background:#111827;display:block"></canvas>
+    </div>
+  </div>
+</div>
+</section>
+
 <section id="play" class="tab hidden"><div class="panel"><h2>▶️ Playlists</h2><div class="row"><input id="plName" placeholder="Nome da playlist"><button class="btn" onclick="addPlaylist()">Criar playlist</button></div></div><div id="playList" class="panel"></div></section>
 <section id="abrir" class="tab hidden"><div class="panel"><h2>🖥️ Abrir TV</h2><p>Na TV ou no navegador onde você quer reproduzir a programação, abra:</p><p><b>https://midia-local.onrender.com/player</b></p><p>Digite o código de ativação da TV. Exemplo: <b>ML-XXXXXX</b>.</p></div></section>
 <script>
@@ -317,6 +339,194 @@ async function publishPlaylist(pid){
     alert(e.message);
   }
 }
+
+
+let adPhotoImage = null;
+let adPreviewAnimation = null;
+
+function drawAdFrame(progress = 0){
+  const canvas = $('adCanvas');
+  if(!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  const title = $('adTitle')?.value.trim() || 'OFERTA ESPECIAL';
+  const text = $('adText')?.value.trim() || 'Aproveite por tempo limitado!';
+  const price = $('adPrice')?.value.trim() || '';
+  const contact = $('adContact')?.value.trim() || '';
+
+  const bg = ctx.createLinearGradient(0,0,w,h);
+  bg.addColorStop(0,'#111827');
+  bg.addColorStop(1,'#374151');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,w,h);
+
+  if(adPhotoImage){
+    const zoom = 1.02 + progress * 0.04;
+    const scale = Math.max(w / adPhotoImage.width, h / adPhotoImage.height) * zoom;
+    const iw = adPhotoImage.width * scale;
+    const ih = adPhotoImage.height * scale;
+    const x = (w-iw)/2;
+    const y = (h-ih)/2;
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.drawImage(adPhotoImage,x,y,iw,ih);
+    ctx.restore();
+    ctx.fillStyle = 'rgba(17,24,39,.55)';
+    ctx.fillRect(0,0,w,h);
+  }
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 64px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText(title, 90, 145);
+
+  ctx.fillStyle = '#e5e7eb';
+  ctx.font = '400 38px Arial';
+  wrapCanvasText(ctx, text, 90, 220, 620, 52);
+
+  if(price){
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = '700 76px Arial';
+    ctx.fillText(price, 90, 450);
+  }
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 32px Arial';
+  ctx.fillText(contact, 90, 610);
+
+  ctx.fillStyle = '#fbbf24';
+  ctx.fillRect(90, 650, 230, 8);
+}
+
+function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight){
+  const words = text.split(' ');
+  let line = '';
+  for(const word of words){
+    const test = line ? line + ' ' + word : word;
+    if(ctx.measureText(test).width > maxWidth && line){
+      ctx.fillText(line, x, y);
+      line = word;
+      y += lineHeight;
+    }else{
+      line = test;
+    }
+  }
+  if(line) ctx.fillText(line, x, y);
+}
+
+function previewAd(){
+  const photo = $('adPhoto');
+  if(photo?.files?.[0]){
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        adPhotoImage = img;
+        drawAdFrame(0);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(photo.files[0]);
+  }else{
+    adPhotoImage = null;
+    drawAdFrame(0);
+  }
+}
+
+async function generateAd(){
+  const status = $('adStatus');
+  const name = $('adName').value.trim() || 'Anúncio Promoção';
+
+  if(!window.MediaRecorder){
+    return alert('Seu navegador não suporta a criação automática de vídeos.');
+  }
+
+  status.textContent = 'Gerando vídeo... não feche esta página.';
+
+  try{
+    previewAd();
+
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const canvas = $('adCanvas');
+    const stream = canvas.captureStream(25);
+
+    const mimeTypes = [
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+
+    const mimeType = mimeTypes.find(x => MediaRecorder.isTypeSupported(x));
+
+    if(!mimeType){
+      throw new Error('O navegador não conseguiu criar o vídeo.');
+    }
+
+    const recorder = new MediaRecorder(stream,{
+      mimeType,
+      videoBitsPerSecond: 1800000
+    });
+
+    const chunks = [];
+    recorder.ondataavailable = e => {
+      if(e.data.size) chunks.push(e.data);
+    };
+
+    const stopped = new Promise((resolve,reject)=>{
+      recorder.onstop = resolve;
+      recorder.onerror = e => reject(e.error || new Error('Erro na gravação.'));
+    });
+
+    let start = performance.now();
+    function animate(now){
+      const progress = Math.min(1,(now-start)/8000);
+      drawAdFrame(progress);
+      if(progress < 1){
+        adPreviewAnimation = requestAnimationFrame(animate);
+      }
+    }
+
+    recorder.start();
+    adPreviewAnimation = requestAnimationFrame(animate);
+
+    await new Promise(resolve => setTimeout(resolve, 8200));
+
+    if(recorder.state !== 'inactive') recorder.stop();
+    await stopped;
+
+    stream.getTracks().forEach(track => track.stop());
+
+    const blob = new Blob(chunks,{type:'video/webm'});
+    const fd = new FormData();
+    fd.append('file',blob,'anuncio.webm');
+    fd.append('name',name);
+
+    status.textContent = 'Finalizando o vídeo no servidor...';
+
+    await api('/api/ads',{
+      method:'POST',
+      body:fd
+    });
+
+    status.textContent = 'Anúncio criado com sucesso! Ele já está em Mídias.';
+    alert('Anúncio criado! Ele já está disponível em Mídias para entrar em uma playlist.');
+    refresh();
+  }catch(e){
+    console.error(e);
+    status.textContent = '';
+    alert(e.message || 'Não foi possível criar o anúncio.');
+  }
+}
+
+document.getElementById('adPhoto')?.addEventListener('change',previewAd);
+['adTitle','adText','adPrice','adContact'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('input',()=>drawAdFrame(0));
+});
+drawAdFrame(0);
 
 function copyCode(c){
   navigator.clipboard?.writeText(c);
